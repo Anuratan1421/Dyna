@@ -1,0 +1,374 @@
+/* Global Styles */
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: sans-serif; /* Changed to sans-serif as per user's original CSS */
+  background-color: #fff;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* --- Landing Page Styles (from user's provided CSS) --- */
+.container {
+  /* Renamed from .container to match Home.jsx */
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.logo-text {
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  font-size: 3rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.centered-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 30px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  z-index: 2;
+  width: max-content;
+}
+
+/* Responsive adjustment for centered-content (from user's provided CSS) */
+@media (max-width: 768px) {
+  .centered-content {
+    width: auto;
+    padding: 20px;
+  }
+}
+
+.tagline-text {
+  font-size: 1.5rem;
+  color: #fff;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.buttons-container {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.action-button {
+  padding: 10px 25px;
+  border: none;
+  background-color: #ffffffaa;
+  color: #000;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  background-color: #fff;
+  transform: scale(1.05);
+}
+
+.character-image {
+  position: absolute;
+  bottom: 0;
+  right: 0px; /* Position to the right */
+  height: 80%;
+  object-fit: contain;
+}
+
+/* Responsive adjustments for character-image (corrected syntax) */
+@media (max-width: 1024px) {
+  .character-image {
+    height: 80%;
+    right: -50px; /* Pull slightly left on smaller desktops */
+  }
+}
+@media (max-width: 768px) {
+  .character-image {
+    height: 70%;
+    right: -80px; /* Pull further left on tablets */
+  }
+}
+@media (max-width: 480px) {
+  .character-image {
+    height: 60%;
+    right: -100px; /* Pull even further left on mobile */
+  }
+}
+
+/* Responsive adjustments for landing page (from user's provided CSS) */
+@media (max-width: 768px) {
+  .logo-text {
+    font-size: 2.5rem;
+    top: 3vh;
+    left: 3vw;
+  }
+  .tagline-text {
+    font-size: 1.5rem;
+  }
+  .action-button {
+    padding: 0.6rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text {
+    font-size: 2rem;
+    top: 2vh;
+    left: 2vw;
+  }
+  .tagline-text {
+    font-size: 1.2rem;
+  }
+  .action-button {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* --- Auth Page Container (from previous response) --- */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100vw;
+  background-image: url("./assets/bg.webp"); /* Use the provided background image */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Auth Form Card */
+.auth-form-card {
+  background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+  backdrop-filter: blur(5px); /* Apply blur effect */
+}
+
+.auth-form-card h2 {
+  margin-bottom: 25px;
+  color: #333;
+  font-size: 2em;
+}
+
+/* Form Group */
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: calc(100% - 20px); /* Adjust for padding */
+  padding: 12px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1em;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* Auth Button */
+.auth-button {
+  width: auto;
+  padding: 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 18px;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.auth-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+/* Auth Message */
+.auth-message {
+  margin-top: 20px;
+  font-size: 0.95em;
+  color: #dc3545; /* Red for errors */
+  font-weight: bold;
+}
+
+/* Auth Link Text */
+.auth-link-text {
+  margin-top: 20px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.auth-link-text a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.auth-link-text a:hover {
+  text-decoration: underline;
+}
+
+/* Character Image on Signup Page */
+.auth-character-image {
+  max-width: 150px;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+/* Chat Page Styles */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #e9ecef;
+  padding: 20px;
+  text-align: center;
+}
+
+.chat-header {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 15px 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chat-header h1 {
+  margin: 0;
+  color: #333;
+  font-size: 1.8em;
+}
+
+.logout-button {
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #c82333;
+}
+
+.chat-content {
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  width: 100%;
+}
+
+.chat-character-image {
+  max-width: 200px;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.chat-content p {
+  font-size: 1.2em;
+  color: #555;
+}
+
+/* Responsive adjustments for auth/chat pages */
+@media (max-width: 768px) {
+  .auth-form-card {
+    padding: 30px;
+  }
+  .auth-form-card h2 {
+    font-size: 1.8em;
+  }
+  .form-group input {
+    padding: 10px;
+  }
+  .auth-button {
+    padding: 10px;
+    font-size: 1em;
+  }
+  .chat-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .chat-header h1 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+  }
+  .chat-content {
+    padding: 30px;
+  }
+  .chat-character-image {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-form-card {
+    padding: 20px;
+    border-radius: 10px;
+  }
+  .auth-form-card h2 {
+    font-size: 1.5em;
+  }
+  .auth-character-image {
+    max-width: 120px;
+  }
+  .chat-content {
+    padding: 20px;
+  }
+  .chat-character-image {
+    max-width: 120px;
+  }
+}

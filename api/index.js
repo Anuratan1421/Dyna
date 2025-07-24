@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("DynaUser", userSchema)
 
 // Signup Route
-app.post("/api/signup", async (req, res) => {
+app.post("/signup", async (req, res) => {
   const { email, password } = req.body
   try {
     const existingUser = await User.findOne({ email })
@@ -67,7 +67,7 @@ app.post("/api/signup", async (req, res) => {
 })
 
 // Login Route
-app.post("/api/login", async (req, res) => {
+app.post("/login", async (req, res) => {
   const { email, password } = req.body
   try {
     const user = await User.findOne({ email })

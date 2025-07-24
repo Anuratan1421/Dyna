@@ -240,7 +240,7 @@ async function createUserChain(userId) {
 }
 
 // Get or create user
-app.post("/api/users", async (req, res) => {
+app.post("/users", async (req, res) => {
   try {
     const { userId, email } = req.body
 
@@ -264,7 +264,7 @@ app.post("/api/users", async (req, res) => {
 })
 
 // Update user consent
-app.put("/api/users/consent", async (req, res) => {
+app.put("/consent", async (req, res) => {
   try {
     const { userId, hasConsented } = req.body
 
@@ -317,7 +317,7 @@ async function getRecentMessages(userId, limit = 6) {
     .then((msgs) => msgs.reverse());
 }
 
-app.post("/api/generate-response", async (req, res) => {
+app.post("/generate-response", async (req, res) => {
   try {
     const { message, userId } = req.body;
 

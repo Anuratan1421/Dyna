@@ -10,12 +10,13 @@ function Chat({ onLogout }) {
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [mode, setMode] = useState("text") // "text" or "voice"
+  const [mode, setMode] = useState("text")
   const [continuousMode, setContinuousMode] = useState(false)
   const [voiceLevel, setVoiceLevel] = useState(0)
-  const [silenceTimer, setSilenceTimer] = useState(null)
   const [hasSpoken, setHasSpoken] = useState(false)
-
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  
   const navigate = useNavigate()
   const recognitionRef = useRef(null)
   const synthRef = useRef(null)
@@ -26,13 +27,11 @@ function Chat({ onLogout }) {
   const animationFrameRef = useRef(null)
   const silenceTimeoutRef = useRef(null)
   const speechTimeoutRef = useRef(null)
-  const lastSpeechTimeRef = useRef(null)
 
   // Initialize speech recognition and synthesis
   useEffect(() => {
     initializeSpeechRecognition()
     initializeSpeechSynthesis()
-
     return () => {
       cleanup()
     }
@@ -42,14 +41,11 @@ function Chat({ onLogout }) {
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       recognitionRef.current = new SpeechRecognition()
-
       recognitionRef.current.continuous = true
       recognitionRef.current.interimResults = true
       recognitionRef.current.lang = "en-US"
-      recognitionRef.current.maxAlternatives = 1
 
       recognitionRef.current.onstart = () => {
-        console.log("Speech recognition started")
         setIsListening(true)
         setHasSpoken(false)
         if (mode === "voice") {
@@ -72,31 +68,26 @@ function Chat({ onLogout }) {
           }
         }
 
-        // Update the message with interim or final results
         const currentTranscript = finalTranscript || interimTranscript
         if (currentTranscript) {
           setNewMessage(currentTranscript)
           setHasSpoken(true)
-          lastSpeechTimeRef.current = Date.now()
 
-          // Clear any existing silence timeout
           if (silenceTimeoutRef.current) {
             clearTimeout(silenceTimeoutRef.current)
           }
 
-          // If we have final results and we're in voice mode, set a shorter timeout
           if (hasNewFinal && mode === "voice") {
             silenceTimeoutRef.current = setTimeout(() => {
               if (hasSpoken && currentTranscript.trim()) {
                 handleSendMessage(null, currentTranscript.trim())
               }
-            }, 1500) // 1.5 seconds after final speech
+            }, 1500)
           }
         }
       }
 
       recognitionRef.current.onerror = (event) => {
-        console.error("Speech recognition error:", event.error)
         if (event.error !== "no-speech") {
           setIsListening(false)
           stopVoiceLevelDetection()
@@ -104,42 +95,16 @@ function Chat({ onLogout }) {
       }
 
       recognitionRef.current.onend = () => {
-        console.log("Speech recognition ended")
         setIsListening(false)
         stopVoiceLevelDetection()
 
-        // If we have spoken content and we're in voice mode, send it
         if (hasSpoken && newMessage.trim() && mode === "voice" && !isLoading) {
           handleSendMessage(null, newMessage.trim())
-        }
-        // Restart listening in continuous voice mode after AI response
-        else if (mode === "voice" && continuousMode && !isSpeaking && !isLoading) {
+        } else if (mode === "voice" && continuousMode && !isSpeaking && !isLoading) {
           setTimeout(() => {
             startListening()
           }, 2000)
         }
-      }
-
-      recognitionRef.current.onspeechstart = () => {
-        console.log("Speech detected")
-        setHasSpoken(true)
-        // Clear any existing timeouts when speech starts
-        if (silenceTimeoutRef.current) {
-          clearTimeout(silenceTimeoutRef.current)
-        }
-        if (speechTimeoutRef.current) {
-          clearTimeout(speechTimeoutRef.current)
-        }
-      }
-
-      recognitionRef.current.onspeechend = () => {
-        console.log("Speech ended")
-        // Set a timeout to stop listening after speech ends
-        speechTimeoutRef.current = setTimeout(() => {
-          if (recognitionRef.current && isListening) {
-            recognitionRef.current.stop()
-          }
-        }, 1000) // Stop 1 second after speech ends
       }
     }
   }
@@ -152,49 +117,24 @@ function Chat({ onLogout }) {
 
   const startVoiceLevelDetection = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       })
-      
+
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
       analyserRef.current = audioContextRef.current.createAnalyser()
       microphoneRef.current = audioContextRef.current.createMediaStreamSource(stream)
-
       microphoneRef.current.connect(analyserRef.current)
       analyserRef.current.fftSize = 256
-      analyserRef.current.smoothingTimeConstant = 0.8
 
       const bufferLength = analyserRef.current.frequencyBinCount
       const dataArray = new Uint8Array(bufferLength)
 
-      let silenceStart = Date.now()
-      const SILENCE_THRESHOLD = 10
-      const SILENCE_DURATION = 2000 // 2 seconds of silence
-
       const updateVoiceLevel = () => {
         if (!analyserRef.current) return
-
         analyserRef.current.getByteFrequencyData(dataArray)
         const average = dataArray.reduce((a, b) => a + b) / bufferLength
         setVoiceLevel(average)
-
-        // Detect silence
-        if (average < SILENCE_THRESHOLD) {
-          if (Date.now() - silenceStart > SILENCE_DURATION && hasSpoken && newMessage.trim()) {
-            // Auto-stop listening after prolonged silence
-            if (recognitionRef.current && isListening) {
-              recognitionRef.current.stop()
-            }
-            return
-          }
-        } else {
-          silenceStart = Date.now()
-        }
-
         animationFrameRef.current = requestAnimationFrame(updateVoiceLevel)
       }
 
@@ -208,44 +148,32 @@ function Chat({ onLogout }) {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
     }
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
       audioContextRef.current.close()
     }
     setVoiceLevel(0)
   }
 
   const cleanup = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-    }
-    if (synthRef.current) {
-      synthRef.current.cancel()
-    }
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current)
-    }
-    if (speechTimeoutRef.current) {
-      clearTimeout(speechTimeoutRef.current)
-    }
+    if (recognitionRef.current) recognitionRef.current.stop()
+    if (synthRef.current) synthRef.current.cancel()
+    if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current)
+    if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current)
     stopVoiceLevelDetection()
   }
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Get user data from localStorage
   useEffect(() => {
     const userData = localStorage.getItem("user")
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData)
         setUser(parsedUser)
-        console.log("User loaded:", parsedUser.userId)
         loadMessages(parsedUser.userId)
       } catch (error) {
-        console.error("Error parsing user data:", error)
         handleLogout()
       }
     } else {
@@ -253,14 +181,10 @@ function Chat({ onLogout }) {
     }
   }, [])
 
-  // Handle mode changes
   useEffect(() => {
     if (mode === "voice") {
       setContinuousMode(true)
-      // Auto-start listening in voice mode
-      setTimeout(() => {
-        startListening()
-      }, 500)
+      setTimeout(() => startListening(), 500)
     } else {
       setContinuousMode(false)
       stopListening()
@@ -308,12 +232,8 @@ function Chat({ onLogout }) {
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop()
     }
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current)
-    }
-    if (speechTimeoutRef.current) {
-      clearTimeout(speechTimeoutRef.current)
-    }
+    if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current)
+    if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current)
     stopVoiceLevelDetection()
   }
 
@@ -321,7 +241,6 @@ function Chat({ onLogout }) {
     return new Promise((resolve) => {
       if (synthRef.current && !isSpeaking) {
         synthRef.current.cancel()
-
         const utterance = new SpeechSynthesisUtterance(text)
         utterance.rate = 0.9
         utterance.pitch = 1
@@ -329,21 +248,17 @@ function Chat({ onLogout }) {
 
         utterance.onstart = () => {
           setIsSpeaking(true)
-          setIsListening(false) // Ensure we're not listening while speaking
+          setIsListening(false)
         }
-        
+
         utterance.onend = () => {
           setIsSpeaking(false)
           resolve()
-          
-          // Auto-restart listening in voice mode after speaking
           if (mode === "voice" && continuousMode) {
-            setTimeout(() => {
-              startListening()
-            }, 1000)
+            setTimeout(() => startListening(), 1000)
           }
         }
-        
+
         utterance.onerror = () => {
           setIsSpeaking(false)
           resolve()
@@ -356,20 +271,13 @@ function Chat({ onLogout }) {
     })
   }
 
-  const stopSpeaking = () => {
-    if (synthRef.current) {
-      synthRef.current.cancel()
-      setIsSpeaking(false)
-    }
-  }
-
   const handleSendMessage = async (e, messageText = null) => {
     if (e) e.preventDefault()
-
     const messageToSend = messageText || newMessage
+
     if (messageToSend.trim() && user && !isLoading) {
       setIsLoading(true)
-      stopListening() // Stop listening while processing
+      stopListening()
 
       const userMessage = {
         id: Date.now(),
@@ -386,13 +294,8 @@ function Chat({ onLogout }) {
       try {
         const response = await fetch("https://dyna-1.onrender.com/generate-response", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: messageToSend,
-            userId: user.userId,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: messageToSend, userId: user.userId }),
         })
 
         if (response.ok) {
@@ -407,12 +310,9 @@ function Chat({ onLogout }) {
 
           setMessages((prev) => [...prev, aiMessage])
 
-          // Speak the AI response
           if (mode === "voice" || continuousMode) {
             await speakText(data.reply)
           }
-        } else {
-          throw new Error("Failed to get AI response")
         }
       } catch (error) {
         console.error("Error sending message:", error)
@@ -433,189 +333,287 @@ function Chat({ onLogout }) {
   const toggleMode = (newMode) => {
     if (newMode !== mode) {
       stopListening()
-      stopSpeaking()
       setNewMessage("")
       setHasSpoken(false)
       setMode(newMode)
     }
   }
 
-  const getVoiceStatus = () => {
-    if (isLoading) return "Thinking..."
-    if (isSpeaking) return "Speaking..."
-    if (isListening && hasSpoken) return "Processing..."
-    if (isListening) return "Listening..."
-    return "Tap to start conversation"
-  }
-
   if (!user) {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <p>Loading chat...</p>
+        <p>Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className={`chat-container ${mode}`}>
-      {/* Header */}
-      <div className="chat-header">
-        <div className="header-left">
-          <h1>Dnya Assistant</h1>
-          <span className="user-info">Welcome, {user.email}</span>
-        </div>
-        <div className="header-right">
-          <button onClick={handleLogout} className="logout-btn">
-            Logout
+    <div className={`chat-app ${isDarkMode ? "dark" : "light"}`}>
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <div className="sidebar-header">
+          <div className="logo">
+            <div className="logo-icon">D</div>
+            {!sidebarCollapsed && <span className="logo-text">Dnya Assistant</span>}
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 12h18M3 6h18M3 18h18"/>
+            </svg>
           </button>
         </div>
-      </div>
 
-      {/* Mode Toggle */}
-      <div className="mode-toggle">
-        <button className={`mode-btn ${mode === "text" ? "active" : ""}`} onClick={() => toggleMode("text")}>
-          <span className="mode-icon">💬</span>
-          <span>Text</span>
-        </button>
-        <button className={`mode-btn ${mode === "voice" ? "active" : ""}`} onClick={() => toggleMode("voice")}>
-          <span className="mode-icon">🎤</span>
-          <span>Voice</span>
-        </button>
-      </div>
+        <nav className="sidebar-nav">
+          <div className="nav-section">
+            <div className="nav-item active">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              {!sidebarCollapsed && <span>Chat</span>}
+            </div>
+            <div className="nav-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              {!sidebarCollapsed && <span>History</span>}
+            </div>
+            <div className="nav-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              {!sidebarCollapsed && <span>Settings</span>}
+            </div>
+          </div>
+        </nav>
 
-      {/* Voice Mode Interface */}
-      {mode === "voice" && (
-        <div className="voice-interface">
-          <div className="voice-visualizer">
-            <div className="voice-circle">
-              <div
-                className={`voice-pulse ${isListening && !hasSpoken ? "listening" : ""} ${
-                  isListening && hasSpoken ? "processing" : ""
-                } ${isSpeaking ? "speaking" : ""} ${isLoading ? "thinking" : ""}`}
-                style={{
-                  transform: `scale(${1 + (voiceLevel / 100) * 0.3})`,
-                }}
-              >
-                <div className="voice-inner">
-                  {isLoading ? (
-                    <div className="thinking-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  ) : isSpeaking ? (
-                    "🔊"
-                  ) : isListening && hasSpoken ? (
-                    "⚡"
-                  ) : isListening ? (
-                    "🎤"
-                  ) : (
-                    "💬"
-                  )}
-                </div>
+        <div className="sidebar-footer">
+          <div className="user-profile">
+            <div className="user-avatar">
+              {user?.email?.charAt(0).toUpperCase()}
+            </div>
+            {!sidebarCollapsed && (
+              <div className="user-info">
+                <div className="user-name">{user?.email}</div>
+                <div className="user-status">Online</div>
               </div>
-            </div>
-          </div>
-
-          <div className="voice-status">
-            <p>{getVoiceStatus()}</p>
-          </div>
-
-          {newMessage && (
-            <div className="voice-transcript">
-              <p>"{newMessage}"</p>
-            </div>
-          )}
-
-          <div className="voice-controls">
-            <button
-              className={`voice-control-btn ${isListening ? "active" : ""}`}
-              onClick={isListening ? stopListening : startListening}
-              disabled={isLoading || isSpeaking}
-            >
-              {isListening ? "Stop" : "Start"}
-            </button>
-            {isSpeaking && (
-              <button className="voice-control-btn stop" onClick={stopSpeaking}>
-                Stop Speaking
-              </button>
             )}
           </div>
+          <button className="logout-button" onClick={handleLogout} title="Logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            {!sidebarCollapsed && <span>Logout</span>}
+          </button>
         </div>
-      )}
+      </aside>
 
-      {/* Messages Container */}
-      <div className={`messages-container ${mode === "voice" ? "voice-mode" : ""}`}>
-        {messages.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🤖</div>
-            <h3>Hi! I'm Dnya</h3>
-            <p>{mode === "text" ? "Type a message to start our conversation" : "Speak to start our conversation"}</p>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <div key={message.id} className={`message ${message.isAI ? "ai-message" : "user-message"}`}>
-              <div className="message-avatar">{message.isAI ? "🤖" : "👤"}</div>
-              <div className="message-bubble">
-                <div className="message-content">{message.text}</div>
-                <div className="message-time">{message.timestamp}</div>
-                {message.isAI && mode === "text" && (
-                  <button
-                    className="speak-btn"
-                    onClick={() => speakText(message.text)}
-                    disabled={isSpeaking}
-                    title="Speak this message"
-                  >
-                    🔊
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-        {isLoading && (
-          <div className="message ai-message">
-            <div className="message-avatar">🤖</div>
-            <div className="message-bubble loading">
-              <div className="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Header */}
+        <header className="chat-header">
+          <div className="header-left">
+            <h1 className="chat-title">Dnya Assistant</h1>
+            <div className="mode-selector">
+              <button 
+                className={`mode-btn ${mode === "text" ? "active" : ""}`}
+                onClick={() => toggleMode("text")}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                Text
+              </button>
+              <button 
+                className={`mode-btn ${mode === "voice" ? "active" : ""}`}
+                onClick={() => toggleMode("voice")}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                Voice
+              </button>
             </div>
           </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Text Mode Input */}
-      {mode === "text" && (
-        <form onSubmit={handleSendMessage} className="message-form">
-          <div className="input-container">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="message-input"
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={isListening ? stopListening : startListening}
-              className={`voice-btn ${isListening ? "listening" : ""}`}
-              disabled={isLoading}
-              title="Voice input"
+          <div className="header-right">
+            <button 
+              className="theme-toggle"
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              title="Toggle theme"
             >
-              🎤
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {isDarkMode ? (
+                  <circle cx="12" cy="12" r="5"/>
+                ) : (
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                )}
+              </svg>
             </button>
           </div>
-          <button type="submit" className="send-btn" disabled={isLoading || !newMessage.trim()}>
-            {isLoading ? "..." : "Send"}
-          </button>
-        </form>
-      )}
+        </header>
+
+        {/* Voice Interface */}
+        {mode === "voice" && (
+          <div className="voice-panel">
+            <div className="voice-status">
+              <div className={`voice-indicator ${isListening ? "listening" : ""} ${isSpeaking ? "speaking" : ""} ${isLoading ? "thinking" : ""}`}>
+                <div className="voice-circle">
+                  <div className="voice-level" style={{ height: `${Math.min(voiceLevel * 2, 100)}%` }}></div>
+                </div>
+              </div>
+              <div className="voice-text">
+                {isLoading ? "Processing..." : 
+                 isSpeaking ? "Speaking..." : 
+                 isListening ? (hasSpoken ? "Processing speech..." : "Listening...") : 
+                 "Click to start voice chat"}
+              </div>
+            </div>
+            
+            {newMessage && (
+              <div className="voice-transcript">
+                <div className="transcript-label">Transcript:</div>
+                <div className="transcript-text">"{newMessage}"</div>
+              </div>
+            )}
+
+            <div className="voice-controls">
+              <button 
+                className={`voice-btn ${isListening ? "active" : ""}`}
+                onClick={isListening ? stopListening : startListening}
+                disabled={isLoading || isSpeaking}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {isListening ? (
+                    <rect x="6" y="4" width="4" height="16" rx="2"/>
+                  ) : (
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  )}
+                </svg>
+                {isListening ? "Stop" : "Start"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className={`messages-container ${mode === "voice" ? "with-voice-panel" : ""}`}>
+          <div className="messages-wrapper">
+            {messages.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <h3>Welcome to Dnya Assistant</h3>
+                <p>Start a conversation by {mode === "text" ? "typing a message" : "using voice commands"}</p>
+              </div>
+            ) : (
+              <div className="messages-list">
+                {messages.map((message) => (
+                  <div key={message.id} className={`message ${message.isAI ? "ai" : "user"}`}>
+                    <div className="message-avatar">
+                      {message.isAI ? "AI" : user?.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="message-content">
+                      <div className="message-header">
+                        <span className="message-sender">{message.isAI ? "Dnya Assistant" : "You"}</span>
+                        <span className="message-time">{message.timestamp}</span>
+                      </div>
+                      <div className="message-text">{message.text}</div>
+                      {message.isAI && (
+                        <div className="message-actions">
+                          <button 
+                            className="action-btn"
+                            onClick={() => speakText(message.text)}
+                            disabled={isSpeaking}
+                            title="Read aloud"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {isLoading && (
+                  <div className="message ai">
+                    <div className="message-avatar">AI</div>
+                    <div className="message-content">
+                      <div className="message-header">
+                        <span className="message-sender">Dnya Assistant</span>
+                      </div>
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Input */}
+        {mode === "text" && (
+          <div className="input-container">
+            <form onSubmit={handleSendMessage} className="message-form">
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="message-input"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={isListening ? stopListening : startListening}
+                  className={`voice-input-btn ${isListening ? "active" : ""}`}
+                  disabled={isLoading}
+                  title="Voice input"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <button 
+                type="submit" 
+                className="send-btn" 
+                disabled={isLoading || !newMessage.trim()}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

@@ -15,7 +15,7 @@ function Signup() {
     setMessage("") // Clear previous messages
 
     try {
-      const response = await fetch("http://localhost:5000/api/signup", {
+      const response = await fetch("https://dyna-rzvx.onrender.com/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

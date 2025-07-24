@@ -269,7 +269,7 @@ function Chat({ onLogout }) {
 
   const loadMessages = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:7000/api/messages/${userId}/dnya`)
+      const response = await fetch(`https://dyna-1.onrender.com/messages/${userId}/dnya`)
       if (response.ok) {
         const data = await response.json()
         const formattedMessages = data.messages.map((msg) => ({
@@ -384,7 +384,7 @@ function Chat({ onLogout }) {
       setHasSpoken(false)
 
       try {
-        const response = await fetch("http://localhost:7000/api/generate-response", {
+        const response = await fetch("https://dyna-1.onrender.com/generate-response", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

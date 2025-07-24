@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Login from "./Login"
 import Signup from "./Signup"
 import Chat from "./Chat"
-
+import Home from "./Home"
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -49,6 +49,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={isLoggedIn ? <Navigate to="/chat" replace /> : <Login onLogin={handleLogin} />} />
         <Route path="/signup" element={<Signup />} />
         <Route

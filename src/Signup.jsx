@@ -27,7 +27,7 @@ function Signup() {
 
       if (response.ok) {
         setMessage(data.message + ". Redirecting to login...")
-        setTimeout(() => navigate("/login"), 2000) // Redirect to login after 2 seconds
+        setTimeout(() => navigate("https://dyna-wine.vercel.app/Login"), 2000) // Redirect to login after 2 seconds
       } else {
         setMessage(data.message || "Signup failed")
       }

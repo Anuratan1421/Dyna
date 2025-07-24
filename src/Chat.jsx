@@ -16,7 +16,8 @@ function Chat({ onLogout }) {
   const [hasSpoken, setHasSpoken] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   const navigate = useNavigate()
   const recognitionRef = useRef(null)
   const synthRef = useRef(null)
@@ -118,7 +119,7 @@ function Chat({ onLogout }) {
   const startVoiceLevelDetection = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       })
 
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
@@ -193,7 +194,7 @@ function Chat({ onLogout }) {
 
   const loadMessages = async (userId) => {
     try {
-      const response = await fetch(`https://dyna-1.onrender.com/messages/${userId}/dnya`)
+      const response = await fetch(`https://dyna-1.onrender.com/api/messages/${userId}/dnya`)
       if (response.ok) {
         const data = await response.json()
         const formattedMessages = data.messages.map((msg) => ({
@@ -351,18 +352,21 @@ function Chat({ onLogout }) {
   return (
     <div className={`chat-app ${isDarkMode ? "dark" : "light"}`}>
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <div className="logo">
             <div className="logo-icon">D</div>
-            {!sidebarCollapsed && <span className="logo-text">Dnya Assistant</span>}
+           
           </div>
-          <button 
+          <button
             className="sidebar-toggle"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={() => {
+              setSidebarCollapsed(!sidebarCollapsed)
+              setSidebarOpen(false)
+            }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 12h18M3 6h18M3 18h18"/>
+              <path d="M3 12h18M3 6h18M3 18h18" />
             </svg>
           </button>
         </div>
@@ -371,20 +375,20 @@ function Chat({ onLogout }) {
           <div className="nav-section">
             <div className="nav-item active">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               {!sidebarCollapsed && <span>Chat</span>}
             </div>
             <div className="nav-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
               {!sidebarCollapsed && <span>History</span>}
             </div>
             <div className="nav-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
               {!sidebarCollapsed && <span>Settings</span>}
             </div>
@@ -393,9 +397,7 @@ function Chat({ onLogout }) {
 
         <div className="sidebar-footer">
           <div className="user-profile">
-            <div className="user-avatar">
-              {user?.email?.charAt(0).toUpperCase()}
-            </div>
+            <div className="user-avatar">{user?.email?.charAt(0).toUpperCase()}</div>
             {!sidebarCollapsed && (
               <div className="user-info">
                 <div className="user-name">{user?.email}</div>
@@ -403,60 +405,66 @@ function Chat({ onLogout }) {
               </div>
             )}
           </div>
-          <button className="logout-button" onClick={handleLogout} title="Logout">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-            </svg>
-            {!sidebarCollapsed && <span>Logout</span>}
-          </button>
+          
         </div>
       </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      <div className={`sidebar-overlay ${sidebarOpen ? "active" : ""}`} onClick={() => setSidebarOpen(false)}></div>
 
       {/* Main Content */}
       <main className="main-content">
         {/* Header */}
         <header className="chat-header">
           <div className="header-left">
+            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
+              
+            </button>
+
+
             <h1 className="chat-title">Dnya Assistant</h1>
+            <button
+            className="logout-button"
+            onClick={() => {
+              setSidebarOpen(false)
+              handleLogout()
+            }}
+            title="Logout"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+            {!sidebarCollapsed && <span>Logout</span>}
+          </button>
             <div className="mode-selector">
-              <button 
-                className={`mode-btn ${mode === "text" ? "active" : ""}`}
-                onClick={() => toggleMode("text")}
-              >
+              <button className={`mode-btn ${mode === "text" ? "active" : ""}`} onClick={() => toggleMode("text")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14,2 14,8 20,8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10,9 9,9 8,9"/>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14,2 14,8 20,8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10,9 9,9 8,9" />
                 </svg>
                 Text
               </button>
-              <button 
-                className={`mode-btn ${mode === "voice" ? "active" : ""}`}
-                onClick={() => toggleMode("voice")}
-              >
+              <button className={`mode-btn ${mode === "voice" ? "active" : ""}`} onClick={() => toggleMode("voice")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
                 </svg>
                 Voice
               </button>
             </div>
           </div>
           <div className="header-right">
-            <button 
-              className="theme-toggle"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              title="Toggle theme"
-            >
+            <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)} title="Toggle theme">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 {isDarkMode ? (
-                  <circle cx="12" cy="12" r="5"/>
+                  <circle cx="12" cy="12" r="5" />
                 ) : (
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 )}
               </svg>
             </button>
@@ -467,19 +475,26 @@ function Chat({ onLogout }) {
         {mode === "voice" && (
           <div className="voice-panel">
             <div className="voice-status">
-              <div className={`voice-indicator ${isListening ? "listening" : ""} ${isSpeaking ? "speaking" : ""} ${isLoading ? "thinking" : ""}`}>
+              <div
+                className={`voice-indicator ${isListening ? "listening" : ""} ${isSpeaking ? "speaking" : ""} ${isLoading ? "thinking" : ""}`}
+              >
                 <div className="voice-circle">
                   <div className="voice-level" style={{ height: `${Math.min(voiceLevel * 2, 100)}%` }}></div>
                 </div>
               </div>
               <div className="voice-text">
-                {isLoading ? "Processing..." : 
-                 isSpeaking ? "Speaking..." : 
-                 isListening ? (hasSpoken ? "Processing speech..." : "Listening...") : 
-                 "Click to start voice chat"}
+                {isLoading
+                  ? "Processing..."
+                  : isSpeaking
+                    ? "Speaking..."
+                    : isListening
+                      ? hasSpoken
+                        ? "Processing speech..."
+                        : "Listening..."
+                      : "Click to start voice chat"}
               </div>
             </div>
-            
+
             {newMessage && (
               <div className="voice-transcript">
                 <div className="transcript-label">Transcript:</div>
@@ -488,16 +503,16 @@ function Chat({ onLogout }) {
             )}
 
             <div className="voice-controls">
-              <button 
+              <button
                 className={`voice-btn ${isListening ? "active" : ""}`}
                 onClick={isListening ? stopListening : startListening}
                 disabled={isLoading || isSpeaking}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   {isListening ? (
-                    <rect x="6" y="4" width="4" height="16" rx="2"/>
+                    <rect x="6" y="4" width="4" height="16" rx="2" />
                   ) : (
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                   )}
                 </svg>
                 {isListening ? "Stop" : "Start"}
@@ -513,7 +528,7 @@ function Chat({ onLogout }) {
               <div className="empty-state">
                 <div className="empty-icon">
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </div>
                 <h3>Welcome to Dnya Assistant</h3>
@@ -523,9 +538,7 @@ function Chat({ onLogout }) {
               <div className="messages-list">
                 {messages.map((message) => (
                   <div key={message.id} className={`message ${message.isAI ? "ai" : "user"}`}>
-                    <div className="message-avatar">
-                      {message.isAI ? "AI" : user?.email?.charAt(0).toUpperCase()}
-                    </div>
+                    <div className="message-avatar">{message.isAI ? "AI" : user?.email?.charAt(0).toUpperCase()}</div>
                     <div className="message-content">
                       <div className="message-header">
                         <span className="message-sender">{message.isAI ? "Dnya Assistant" : "You"}</span>
@@ -534,15 +547,22 @@ function Chat({ onLogout }) {
                       <div className="message-text">{message.text}</div>
                       {message.isAI && (
                         <div className="message-actions">
-                          <button 
+                          <button
                             className="action-btn"
                             onClick={() => speakText(message.text)}
                             disabled={isSpeaking}
                             title="Read aloud"
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
                             </svg>
                           </button>
                         </div>
@@ -550,7 +570,7 @@ function Chat({ onLogout }) {
                     </div>
                   </div>
                 ))}
-                
+
                 {isLoading && (
                   <div className="message ai">
                     <div className="message-avatar">AI</div>
@@ -593,21 +613,17 @@ function Chat({ onLogout }) {
                   title="Voice input"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                    <line x1="8" y1="23" x2="16" y2="23"/>
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                    <line x1="12" y1="19" x2="12" y2="23" />
+                    <line x1="8" y1="23" x2="16" y2="23" />
                   </svg>
                 </button>
               </div>
-              <button 
-                type="submit" 
-                className="send-btn" 
-                disabled={isLoading || !newMessage.trim()}
-              >
+              <button type="submit" className="send-btn" disabled={isLoading || !newMessage.trim()}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22,2 15,22 11,13 2,9 22,2" />
                 </svg>
               </button>
             </form>
